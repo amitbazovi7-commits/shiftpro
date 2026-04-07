@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ShiftPro">
+<meta name="theme-color" content="#0a0c14">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.svg">
+<title>ShiftPro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ── TOKENS ── */
+:root{
+  --bg:#0a0c14;--surf:#111520;--surf2:#171d2e;--surf3:#1e2640;--brd:#252d45;
+  --accent:#4f8ef7;--accent2:#7c5cfc;--accent3:#f75f4f;--gold:#f0b429;
+  --green:#2ecc71;--teal:#00ced1;--text:#e8eaf0;--text2:#8892b0;--text3:#3d4a6b;
+  --r:14px;--hdr:56px;--nav:62px;
+  --sft:env(safe-area-inset-top,0px);
+  --sfb:env(safe-area-inset-bottom,0px);
+  --sfl:env(safe-area-inset-left,0px);
+  --sfr:env(safe-area-inset-right,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+/* ── LAYOUT: single flex column, no position:fixed overlaps ── */
+html{height:100%;height:-webkit-fill-available;}
+body{
+  font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);
+  height:100%;height:-webkit-fill-available;
+  min-height:100vh;min-height:-webkit-fill-available;
+  display:flex;flex-direction:column;
+  /* iOS safe area padding */
+  padding-top:var(--sft);
+  padding-left:var(--sfl);
+  padding-right:var(--sfr);
+  padding-bottom:0;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 5%,rgba(79,142,247,0.08) 0%,transparent 55%),
+    radial-gradient(ellipse 60% 60% at 85% 90%,rgba(124,92,252,0.06) 0%,transparent 55%);
+  z-index:0;
+}
+
+/* ── HEADER ── */
+.hdr{
+  flex-shrink:0;height:var(--hdr);
+  background:rgba(17,21,32,0.95);border-bottom:1px solid var(--brd);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;position:relative;z-index:10;
+}
+.hdr-logo{font-size:19px;font-weight:900;letter-spacing:-.5px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hdr-title{font-size:15px;font-weight:700;color:var(--text);
+  position:absolute;left:50%;transform:translateX(-50%);}
+.hdr-btns{display:flex;gap:4px;align-items:center;}
+.hdr-btn{background:none;border:none;color:var(--text2);font-size:20px;
+  cursor:pointer;padding:8px;border-radius:10px;line-height:1;
+  display:flex;align-items:center;justify-content:center;}
+.hdr-btn:active{background:var(--surf2);}
+.hdr-btn.accent{color:var(--accent);}
+
+/* ── SCROLL AREA ── */
+.content{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  position:relative;z-index:1;
+}
+
+/* ── BOTTOM NAV ── */
+.bnav{
+  flex-shrink:0;
+  height:calc(var(--nav) + var(--sfb));
+  padding-bottom:var(--sfb);
+  background:rgba(17,21,32,0.97);border-top:1px solid var(--brd);
+  display:flex;align-items:flex-start;padding-top:6px;
+  position:relative;z-index:10;overflow:visible;
+}
+.ni{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:4px 2px;background:none;border:none;cursor:pointer;position:relative;
+  -webkit-tap-highlight-color:transparent;
+}
+.ni .ico{font-size:22px;line-height:1;transition:transform .15s;}
+.ni .lbl{font-size:10px;font-weight:600;color:var(--text3);
+  font-family:'Heebo',sans-serif;transition:color .15s;}
+.ni.active .ico{transform:scale(1.1);}
+.ni.active .lbl{color:var(--accent);}
+.ni.active::before{
+  content:'';position:absolute;top:0;left:50%;
+  transform:translateX(-50%);width:28px;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+}
+/* centre add button */
+.ni.add .ico{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:50%;width:44px;height:44px;display:flex;
+  align-items:center;justify-content:center;font-size:22px;
+  box-shadow:0 4px 16px rgba(79,142,247,.4);margin-top:-10px;
+  overflow:hidden;line-height:1;
+}
+.ni.add{overflow:visible;}
+.ni.add::before{display:none;}
+.ni.add::after{display:none;}
+.ni.add .lbl{color:var(--text3);}
+.ni.add.active .lbl{color:var(--accent);}
+/* Remove any pseudo-element artifacts */
+.ni.add .ico::before,.ni.add .ico::after{display:none;}
+
+/* ── PAGES ── */
+.page{display:none;animation:fadeUp .22s ease;padding:14px 14px 10px;}
+.page.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── CARDS ── */
+.card-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);padding:16px;}
+.card .cl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.card .cv{font-size:21px;font-weight:800;font-family:'Space Mono',monospace;line-height:1.1;}
+.card .cs{font-size:11px;color:var(--text2);margin-top:4px;}
+.card.accent{border-color:rgba(79,142,247,.35);background:rgba(79,142,247,.06);}.card.accent .cv{color:var(--accent);}
+.card.green{border-color:rgba(46,204,113,.35);background:rgba(46,204,113,.06);}.card.green .cv{color:var(--green);}
+.card.gold{border-color:rgba(240,180,41,.35);background:rgba(240,180,41,.06);}.card.gold .cv{color:var(--gold);}
+.card.purple{border-color:rgba(124,92,252,.35);background:rgba(124,92,252,.06);}.card.purple .cv{color:var(--accent2);}
+.card.red{border-color:rgba(247,95,79,.35);background:rgba(247,95,79,.06);}.card.red .cv{color:var(--accent3);}
+
+/* ── SECTION ── */
+.sec{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);margin-bottom:12px;overflow:hidden;}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 10px;border-bottom:1px solid var(--brd);}
+.sec-hdr h3{font-size:14px;font-weight:700;}
+
+/* ── FORMS ── */
+.fsec{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.fsec h3{font-size:14px;font-weight:700;margin-bottom:14px;}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.field label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.field input,.field select{
+  background:var(--surf2);border:1px solid var(--brd);border-radius:12px;
+  padding:13px 14px;color:var(--text);font-family:'Heebo',sans-serif;
+  font-size:16px;outline:none;transition:border-color .2s;
+  -webkit-appearance:none;width:100%;
+}
+.field input:focus,.field select:focus{border-color:var(--accent);}
+.field-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{width:100%;padding:14px;border-radius:13px;border:none;
+  font-family:'Heebo',sans-serif;font-size:15px;font-weight:700;cursor:pointer;}
+.btn:active{opacity:.85;}
+.btn-p{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+  box-shadow:0 4px 14px rgba(79,142,247,.35);}
+.btn-s{background:var(--surf2);color:var(--text);border:1px solid var(--brd);}
+.btn-d{background:rgba(247,95,79,.12);color:var(--accent3);border:1px solid rgba(247,95,79,.3);}
+.btn-g{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.3);}
+.btn-sm{padding:8px 16px;font-size:13px;border-radius:10px;width:auto;}
+.btn-row{display:flex;gap:10px;margin-top:4px;}
+.btn-row .btn{flex:1;}
+
+/* ── DETECT BOX ── */
+.dbox{background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.25);
+  border-radius:12px;padding:12px 14px;margin-top:8px;display:none;}
+.dbox strong{color:var(--accent);font-size:12px;}
+.dtags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.b-blue{background:rgba(79,142,247,.15);color:var(--accent);}
+.b-gold{background:rgba(240,180,41,.15);color:var(--gold);}
+.b-green{background:rgba(46,204,113,.15);color:var(--green);}
+.b-red{background:rgba(247,95,79,.15);color:var(--accent3);}
+.b-purple{background:rgba(124,92,252,.15);color:var(--accent2);}
+.b-teal{background:rgba(0,206,209,.15);color:var(--teal);}
+
+/* ── SHIFT ITEMS ── */
+.si{padding:13px 15px;border-bottom:1px solid rgba(37,45,69,.5);}
+.si:last-child{border-bottom:none;}
+.si-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+.si-date{font-size:14px;font-weight:700;}
+.si-pay{font-size:16px;font-weight:800;font-family:'Space Mono',monospace;color:var(--green);}
+.si-mid{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.si-time{font-size:12px;color:var(--text2);}
+.si-dur{font-size:12px;font-family:'Space Mono',monospace;color:var(--text2);}
+.si-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.si-body{display:none;margin-top:10px;}
+.si-body.open{display:block;}
+.bk{border:1px solid rgba(37,45,69,.8);border-radius:9px;overflow:hidden;margin-bottom:6px;}
+.bkr{display:grid;grid-template-columns:1fr auto auto;border-bottom:1px solid rgba(37,45,69,.4);}
+.bkr:last-child{border-bottom:none;}
+.bkr.hdr{background:rgba(23,29,46,.9);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;}
+.bkr>div{padding:6px 10px;font-size:11px;}
+.bkr .bkl{color:var(--text2);}
+.bkr .bkp{color:var(--gold);font-family:'Space Mono',monospace;text-align:center;}
+.bkr .bkm{color:var(--green);font-family:'Space Mono',monospace;text-align:left;}
+.bkr.ttl{background:rgba(46,204,113,.07);font-weight:700;}
+.bkr.ttl .bkl{color:var(--text);}
+.bkr.spill .bkl{color:var(--teal);}
+.det-note{font-size:10px;color:var(--text3);line-height:1.6;}
+.del-btn{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;
+  padding:3px 7px;border-radius:8px;}
+.del-btn:active{color:var(--accent3);}
+
+/* ── FILTER CHIPS ── */
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;margin-bottom:2px;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--brd);
+  background:var(--surf2);color:var(--text2);font-family:'Heebo',sans-serif;
+  font-size:13px;font-weight:500;cursor:pointer;}
+.chip.active{background:rgba(79,142,247,.15);border-color:rgba(79,142,247,.4);color:var(--accent);}
+
+/* ── CHART ── */
+.chrt{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);
+  padding:14px;margin-bottom:12px;}
+.chrt h3{font-size:13px;font-weight:700;margin-bottom:12px;}
+
+/* ── REPORT ── */
+.rblk{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);
+  padding:14px;margin-bottom:12px;}
+.rblk h3{font-size:13px;font-weight:700;margin-bottom:10px;}
+.rr{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 0;border-bottom:1px solid rgba(37,45,69,.4);}
+.rr:last-child{border-bottom:none;}
+.rrl{font-size:13px;color:var(--text2);}
+.rrl small{display:block;font-size:10px;color:var(--text3);margin-top:1px;}
+.rrv{font-size:13px;font-family:'Space Mono',monospace;font-weight:600;}
+.rr.tot{border-top:2px solid var(--brd);border-bottom:none;padding-top:12px;font-weight:700;}
+.rr.tot .rrl{color:var(--text);font-size:14px;}
+.net-box{background:linear-gradient(135deg,rgba(46,204,113,.1),rgba(79,142,247,.08));
+  border:1px solid rgba(46,204,113,.3);border-radius:14px;
+  padding:16px 18px;margin-bottom:12px;
+  display:flex;justify-content:space-between;align-items:center;}
+.net-box .nbl{font-size:12px;color:var(--text2);}
+.net-box .nbv{font-size:26px;font-weight:900;font-family:'Space Mono',monospace;color:var(--green);}
+
+/* ── SETTINGS ── */
+.ssec{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.ssec h3{font-size:14px;font-weight:700;margin-bottom:4px;}
+.ssec p{font-size:12px;color:var(--text2);margin-bottom:14px;}
+.wage-big{font-size:38px;font-weight:900;font-family:'Space Mono',monospace;color:var(--gold);margin:8px 0 12px;}
+
+/* ── HOLIDAYS ── */
+.hitem{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 0;border-bottom:1px solid rgba(37,45,69,.4);}
+.hitem:last-child{border-bottom:none;}
+.hitem-n{font-size:14px;font-weight:600;}
+.hitem-d{font-size:11px;color:var(--text2);margin-top:2px;}
+.hitem-b{font-size:11px;padding:3px 10px;border-radius:20px;
+  background:rgba(240,180,41,.12);color:var(--gold);white-space:nowrap;}
+.hpast .hitem-n,.hpast .hitem-d{opacity:.4;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:48px 16px;color:var(--text2);}
+.empty .ei{font-size:42px;margin-bottom:12px;}
+.empty h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:calc(var(--nav) + var(--sfb) + 10px);
+  left:50%;transform:translateX(-50%) translateY(120px);
+  background:var(--surf3);border:1px solid var(--brd);border-radius:13px;
+  padding:12px 20px;font-size:14px;font-weight:500;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:9999;white-space:nowrap;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s ease;
+  pointer-events:none;opacity:0;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.success{border-color:rgba(46,204,113,.4);}
+.toast.error{border-color:rgba(247,95,79,.4);}
+
+/* ── MODAL (Help) ── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;
+  display:none;align-items:flex-end;
+}
+.modal-bg.open{display:flex;}
+.modal{
+  background:var(--surf);border-radius:20px 20px 0 0;
+  width:100%;max-height:88vh;overflow-y:auto;
+  padding:0 0 calc(16px + var(--sfb));
+  animation:slideUp .28s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-handle{width:36px;height:4px;background:var(--brd);border-radius:2px;
+  margin:12px auto 0;}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--brd);}
+.modal-hdr h2{font-size:17px;font-weight:800;}
+.modal-close{background:none;border:none;color:var(--text2);font-size:22px;
+  cursor:pointer;padding:4px;border-radius:8px;}
+.modal-body{padding:16px 18px;}
+.help-section{margin-bottom:22px;}
+.help-section h3{font-size:14px;font-weight:700;color:var(--accent);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.help-section p,.help-section li{font-size:13px;color:var(--text2);line-height:1.7;}
+.help-section ul{padding-right:18px;}
+.help-section li{margin-bottom:4px;}
+.help-tip{background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);
+  border-radius:10px;padding:10px 14px;margin-top:8px;font-size:12px;color:var(--text2);}
+.help-tip strong{color:var(--accent);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <span class="hdr-logo">ShiftPro</span>
+  <span class="hdr-title" id="hdr-title">דשבורד</span>
+  <div class="hdr-btns">
+    <button class="hdr-btn accent" id="hdr-extra" style="display:none" onclick="hdrExtraAction()"></button>
+    <button class="hdr-btn" onclick="showPage('settings')" title="הגדרות" id="hdr-settings-btn">⚙️</button>
+    <button class="hdr-btn" onclick="openHelp()" title="מדריך שימוש">❓</button>
+  </div>
+</header>
+
+<!-- SCROLLABLE CONTENT -->
+<div class="content" id="content">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="card-2">
+      <div class="card accent"><div class="cl">שכר החודש</div><div class="cv" id="dc-pay">₪0</div><div class="cs" id="dc-mlabel">—</div></div>
+      <div class="card green"><div class="cl">שעות</div><div class="cv" id="dc-hrs">0:00</div><div class="cs">החודש</div></div>
+    </div>
+    <div class="card-2">
+      <div class="card gold"><div class="cl">משמרות</div><div class="cv" id="dc-cnt">0</div><div class="cs">החודש</div></div>
+      <div class="card purple"><div class="cl">ממוצע/שעה</div><div class="cv" id="dc-avg">₪0</div><div class="cs">שכר ממוצע</div></div>
+    </div>
+    <div class="chrt">
+      <h3>הכנסות — 6 חודשים</h3>
+      <canvas id="dashChart" height="170"></canvas>
+    </div>
+    <div class="sec">
+      <div class="sec-hdr">
+        <h3>משמרות אחרונות</h3>
+        <button class="btn btn-s btn-sm" onclick="showPage('shifts')">הכל</button>
+      </div>
+      <div id="recent-list"></div>
+    </div>
+  </div>
+
+  <!-- ADD SHIFT -->
+  <div class="page" id="page-add">
+    <div class="fsec">
+      <h3>פרטי המשמרת</h3>
+      <div class="field-2">
+        <div class="field"><label>תאריך התחלה</label><input type="date" id="f-sd" onchange="previewDetect()"></div>
+        <div class="field"><label>שעת התחלה</label><input type="time" id="f-st" onchange="previewDetect()"></div>
+      </div>
+      <div class="field-2">
+        <div class="field"><label>תאריך סיום</label><input type="date" id="f-ed" onchange="previewDetect()"></div>
+        <div class="field"><label>שעת סיום</label><input type="time" id="f-et" onchange="previewDetect()"></div>
+      </div>
+      <div class="field"><label>הפסקה (דקות)</label><input type="number" id="f-brk" value="0" min="0" inputmode="numeric" onchange="previewDetect()"></div>
+      <div class="dbox" id="dbox">
+        <strong>זיהוי אוטומטי</strong>
+        <div class="dtags" id="dtags"></div>
+        <div id="dextra" style="font-size:12px;color:var(--text2);margin-top:6px;"></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="clearForm()">ניקוי</button>
+      <button class="btn btn-p" onclick="addShift()">✔ הוסף משמרת</button>
+    </div>
+  </div>
+
+  <!-- SHIFTS -->
+  <div class="page" id="page-shifts">
+    <div class="chips" id="chips"></div>
+    <div id="shifts-list"></div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="page" id="page-reports">
+    <div class="field" style="margin-bottom:12px;">
+      <label>בחר חודש לדוח</label>
+      <select id="rsel" onchange="renderReport()"><option value="">בחר חודש</option></select>
+    </div>
+    <div id="report-content">
+      <div class="empty"><div class="ei">📄</div><h3>בחר חודש לדוח</h3></div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="page" id="page-charts">
+    <div class="field" style="margin-bottom:12px;">
+      <label>תצוגת גרפים</label>
+      <select id="charts-mode" onchange="renderBigCharts()" style="background:var(--surf2);border:1px solid var(--brd);border-radius:12px;padding:13px 14px;color:var(--text);font-family:'Heebo',sans-serif;font-size:16px;outline:none;-webkit-appearance:none;width:100%;">
+        <option value="all">כל החודשים (12 חודשים אחרונים)</option>
+      </select>
+    </div>
+    <div class="chrt"><h3 id="chart-pay-title">שכר לפי חודש (ברוטו)</h3><canvas id="bigPayChart" height="190"></canvas></div>
+    <div class="chrt"><h3 id="chart-hrs-title">שעות לפי חודש</h3><canvas id="bigHrsChart" height="190"></canvas></div>
+    <div class="chrt"><h3>התפלגות סוגי שעות</h3><canvas id="pieChart" height="190"></canvas></div>
+    <div class="chrt" id="avg-chart-wrap"><h3>ממוצע שעתי לפי חודש</h3><canvas id="avgChart" height="190"></canvas></div>
+    <!-- Single month breakdown -->
+    <div id="month-breakdown" style="display:none;">
+      <div class="chrt"><h3 id="chart-month-daily-title">שכר יומי</h3><canvas id="dailyPayChart" height="190"></canvas></div>
+    </div>
+  </div>
+
+  <!-- HOLIDAYS -->
+  <div class="page" id="page-holidays">
+    <div class="sec">
+      <div class="sec-hdr"><h3>📅 חגים קרובים</h3></div>
+      <div style="padding:0 14px;" id="hol-up"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-hdr"><h3>🕰️ חגים שעברו</h3></div>
+      <div style="padding:0 14px;" id="hol-past"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="ssec">
+      <h3>💰 שכר שעתי</h3>
+      <p>שכר בסיס לשעת עבודה</p>
+      <div class="wage-big">₪<span id="wage-val">0</span></div>
+      <div class="field"><label>שכר לשעה (₪)</label>
+        <input type="number" id="wage-input" min="0" step="0.5" placeholder="לדוגמה: 35.5" inputmode="decimal"></div>
+      <button class="btn btn-p" onclick="saveWage()">💾 שמור שכר</button>
+    </div>
+    <div class="ssec">
+      <h3>🏦 פנסיה וקרן השתלמות</h3>
+      <p>אחוזי הפרשה לחישוב הדוח</p>
+      <div class="field-2">
+        <div class="field"><label>פנסיה עובד (%)</label><input type="number" id="s-pen-emp" min="0" max="20" step="0.1" inputmode="decimal"></div>
+        <div class="field"><label>פנסיה מעביד (%)</label><input type="number" id="s-pen-empr" min="0" max="20" step="0.1" inputmode="decimal"></div>
+      </div>
+      <div class="field-2">
+        <div class="field"><label>השתלמות עובד (%)</label><input type="number" id="s-ksh-emp" min="0" max="10" step="0.1" inputmode="decimal"></div>
+        <div class="field"><label>השתלמות מעביד (%)</label><input type="number" id="s-ksh-empr" min="0" max="10" step="0.1" inputmode="decimal"></div>
+      </div>
+      <div class="field"><label>נקודות זיכוי מס</label>
+        <input type="number" id="s-tax-pts" min="0" max="30" step="0.5" inputmode="decimal" placeholder="2.25"></div>
+      <button class="btn btn-p" onclick="saveDeductions()">💾 שמור הגדרות</button>
+    </div>
+    <div class="ssec">
+      <h3>📏 חוקי שכר</h3>
+      <p>מוגדרים לפי חוק עבודה ישראלי</p>
+      <div style="font-size:12px;color:var(--text2);line-height:2.1;">
+        <div>✅ יום רגיל: עד 8 שעות — 100%</div>
+        <div>✅ שע"נ 1–2 (רגיל): 125%</div>
+        <div>✅ שע"נ 3+ (רגיל): 150%</div>
+        <div>✅ לילה ≥2ש' בין 22:00–06:00: שע"נ מה-7</div>
+        <div>✅ שבת/חג: 150% | שע"נ מה-7</div>
+        <div>✅ שבת/חג שע"נ 1–2: 175%</div>
+        <div>✅ שבת/חג שע"נ 3+: 200%</div>
+        <div>✅ גלישה אחרי 04:00: שכר רגיל + שע"נ</div>
+        <div>✅ שבוע מלא 42+שע' + מנוחה: 175% מהשעה ה-1</div>
+      </div>
+    </div>
+    <div class="ssec">
+      <h3>📥 ייצוא וניהול</h3>
+      <p>ייצוא נתונים ואיפוס</p>
+      <button class="btn btn-g" onclick="exportExcel()" style="margin-bottom:10px;">📥 ייצוא ל-Excel</button>
+      <button class="btn btn-d" onclick="clearAllData()">🗑️ מחק את כל המשמרות</button>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="ni active" id="ni-dashboard" onclick="showPage('dashboard')">
+    <span class="ico">⚡</span><span class="lbl">דשבורד</span>
+  </button>
+  <button class="ni" id="ni-shifts" onclick="showPage('shifts')">
+    <span class="ico">📋</span><span class="lbl">משמרות</span>
+  </button>
+  <button class="ni add" id="ni-add" onclick="showPage('add')">
+    <span class="ico">＋</span><span class="lbl">הוסף</span>
+  </button>
+  <button class="ni" id="ni-reports" onclick="showPage('reports')">
+    <span class="ico">📄</span><span class="lbl">דוחות</span>
+  </button>
+  <button class="ni" id="ni-charts" onclick="showPage('charts')">
+    <span class="ico">📊</span><span class="lbl">גרפים</span>
+  </button>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-bg" id="confirm-modal">
+  <div class="modal" style="padding-bottom:calc(20px + var(--sfb))">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <h2>⚠️ אישור</h2>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <p id="confirm-msg" style="font-size:15px;color:var(--text);line-height:1.6;"></p>
+      <div class="btn-row">
+        <button class="btn btn-s" onclick="confirmNo()">ביטול</button>
+        <button class="btn btn-d" onclick="confirmYes()">מחק</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HELP MODAL -->
+<div class="modal-bg" id="help-modal" onclick="closeHelpOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <h2>❓ מדריך ShiftPro</h2>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-s btn-sm" onclick="closeHelp();showPage('holidays')" style="font-size:12px;padding:6px 12px;">✡️ חגים</button>
+        <button class="modal-close" onclick="closeHelp()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+
+      <div class="help-section">
+        <h3>🚀 התחלה מהירה</h3>
+        <ul>
+          <li>ראשית, לחץ <strong>⚙️</strong> בפינה הימנית העליונה והזן את השכר שלך לשעה</li>
+          <li>לחץ <strong>＋ הוסף</strong> בתפריט התחתון להוספת משמרת</li>
+          <li>הזן תאריך ושעת התחלה, תאריך ושעת סיום, והפסקה בדקות</li>
+          <li>המערכת מזהה אוטומטית שבת, חגים ומשמרות לילה</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>⚡ דשבורד</h3>
+        <p>מציג סיכום החודש הנוכחי: שכר ברוטו, שעות, מספר משמרות וממוצע שעתי. גרף עמודות מציג את ההכנסות ב-6 החודשים האחרונים.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>＋ הוספת משמרת</h3>
+        <ul>
+          <li><strong>זיהוי אוטומטי</strong> — ברגע שתמלא שעות, תופיע תיבה שמציגה את סוג המשמרת</li>
+          <li>🌙 <strong>לילה</strong> — עבודה עם 2+ שעות בין 22:00–06:00</li>
+          <li>✡️ <strong>שבת/חג</strong> — כניסה: שישי 16:00 / ערב חג 16:00, יציאה: 04:00 של היום שאחרי</li>
+          <li>↪️ <strong>גלישה</strong> — חלק מהמשמרת נמשך אחרי צאת שבת/חג</li>
+          <li>⚠️ <strong>שבוע מלא</strong> — עבדת 42+ שעות לפני משמרת זו באותו שבוע</li>
+        </ul>
+        <div class="help-tip"><strong>טיפ:</strong> ניתן להזין משמרות שחוצות ימים — לדוגמה: התחלה שישי 22:00, סיום שבת 06:00</div>
+      </div>
+
+      <div class="help-section">
+        <h3>📋 כל המשמרות</h3>
+        <ul>
+          <li>גלול על הכרטיסיות הצבעוניות בראש הדף לסינון לפי חודש</li>
+          <li>לחץ על משמרת כדי לפתוח <strong>פירוט שכר מלא</strong> לפי קטגוריות</li>
+          <li>לחץ 🗑 לצד משמרת כדי למחוק אותה</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>📄 דוחות שכר</h3>
+        <ul>
+          <li>בחר חודש מהרשימה לקבלת דוח מפורט</li>
+          <li>הדוח מציג: שכר ברוטו לפי סוגי שעות, ניכויים (פנסיה, מס, ביטוח לאומי, ביטוח בריאות), ושכר נטו</li>
+          <li>בסוף הדוח מוצגת <strong>צבירה מצטברת</strong> בקרן פנסיה ובקרן השתלמות</li>
+        </ul>
+        <div class="help-tip"><strong>חשוב:</strong> הגדר אחוזי פנסיה ונקודות זיכוי בהגדרות לחישוב מדויק</div>
+      </div>
+
+      <div class="help-section">
+        <h3>📊 גרפים</h3>
+        <p>לחץ על <strong>📊 גרפים</strong> בתפריט התחתון (הכפתור הימני ביותר).</p>
+        <p style="margin-top:6px;">הגרפים כוללים: שכר לפי חודש, שעות לפי חודש, התפלגות סוגי שעות (עוגה), וממוצע שעתי.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>✡️ חגים קרובים</h3>
+        <p>לחץ על כפתור <strong>✡️ חגים</strong> בראש חלון העזרה הזה (למעלה מימין).</p>
+        <p style="margin-top:6px;">רשימת כל חגי ישראל שמקנים תגמול מיוחד, עם ספירה לאחור לכל חג.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>⚙️ הגדרות</h3>
+        <p>לחץ על <strong>⚙️</strong> בפינה הימנית העליונה של המסך (ליד ❓).</p>
+        <ul>
+          <li><strong>שכר שעתי</strong> — הבסיס לכל חישובי השכר</li>
+          <li><strong>פנסיה</strong> — אחוז ניכוי עובד + הפרשת מעביד</li>
+          <li><strong>קרן השתלמות</strong> — אחוז ניכוי עובד + הפרשת מעביד</li>
+          <li><strong>נקודות זיכוי מס</strong> — ברירת מחדל 2.25 לתושב ישראל</li>
+          <li><strong>ייצוא Excel</strong> — שמור עותק של כל המשמרות</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>💾 שמירת נתונים</h3>
+        <p>כל הנתונים נשמרים <strong>אוטומטית</strong> על המכשיר שלך. לא נשלח שום מידע לשרת. הנתונים נשמרים גם כשסוגרים את האפליקציה.</p>
+        <div class="help-tip"><strong>גיבוי:</strong> השתמש בייצוא ל-Excel בהגדרות כדי לשמור עותק מהנתונים</div>
+      </div>
+
+      <div class="help-section">
+        <h3>📱 התקנה על iPhone</h3>
+        <ul>
+          <li>פתח ב-<strong>Safari</strong> (לא Chrome)</li>
+          <li>לחץ ⬆️ שתף בתחתית הדפדפן</li>
+          <li>בחר <strong>"הוסף למסך הבית"</strong></li>
+          <li>האפליקציה תופיע כאייקון רגיל ותעבוד גם ללא אינטרנט</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  PAID HOLIDAYS
+// ═══════════════════════════════════════════
+const HOLIDAYS={
+  '2024-04-22':'ערב פסח','2024-04-23':'פסח א','2024-04-28':'שביעי של פסח','2024-04-29':'אחרון של פסח',
+  '2025-04-12':'ערב פסח','2025-04-13':'פסח א','2025-04-18':'שביעי של פסח','2025-04-19':'אחרון של פסח',
+  '2026-04-01':'ערב פסח','2026-04-02':'פסח א','2026-04-07':'שביעי של פסח','2026-04-08':'אחרון של פסח',
+  '2027-04-21':'ערב פסח','2027-04-22':'פסח א','2027-04-27':'שביעי של פסח','2027-04-28':'אחרון של פסח',
+  '2028-04-10':'ערב פסח','2028-04-11':'פסח א','2028-04-16':'שביעי של פסח','2028-04-17':'אחרון של פסח',
+  '2024-05-13':'יום העצמאות','2025-05-01':'יום העצמאות','2026-04-23':'יום העצמאות',
+  '2027-05-12':'יום העצמאות','2028-05-02':'יום העצמאות',
+  '2024-06-11':'ערב שבועות','2024-06-12':'שבועות',
+  '2025-06-01':'ערב שבועות','2025-06-02':'שבועות',
+  '2026-05-21':'ערב שבועות','2026-05-22':'שבועות',
+  '2027-06-10':'ערב שבועות','2027-06-11':'שבועות',
+  '2028-05-30':'ערב שבועות','2028-05-31':'שבועות',
+  '2024-10-02':'ערב ראש השנה','2024-10-03':'ראש השנה א','2024-10-04':'ראש השנה ב',
+  '2025-09-22':'ערב ראש השנה','2025-09-23':'ראש השנה א','2025-09-24':'ראש השנה ב',
+  '2026-09-11':'ערב ראש השנה','2026-09-12':'ראש השנה א','2026-09-13':'ראש השנה ב',
+  '2027-10-01':'ערב ראש השנה','2027-10-02':'ראש השנה א','2027-10-03':'ראש השנה ב',
+  '2028-09-20':'ערב ראש השנה','2028-09-21':'ראש השנה א','2028-09-22':'ראש השנה ב',
+  '2024-10-11':'ערב יום כיפור','2024-10-12':'יום כיפור',
+  '2025-10-01':'ערב יום כיפור','2025-10-02':'יום כיפור',
+  '2026-09-20':'ערב יום כיפור','2026-09-21':'יום כיפור',
+  '2027-10-10':'ערב יום כיפור','2027-10-11':'יום כיפור',
+  '2028-09-29':'ערב יום כיפור','2028-09-30':'יום כיפור',
+  '2024-10-16':'ערב סוכות','2024-10-17':'סוכות א','2024-10-23':'ערב שמיני עצרת','2024-10-24':'שמיני עצרת',
+  '2025-10-06':'ערב סוכות','2025-10-07':'סוכות א','2025-10-13':'ערב שמיני עצרת','2025-10-14':'שמיני עצרת',
+  '2026-09-25':'ערב סוכות','2026-09-26':'סוכות א','2026-10-02':'ערב שמיני עצרת','2026-10-03':'שמיני עצרת',
+  '2027-10-15':'ערב סוכות','2027-10-16':'סוכות א','2027-10-22':'ערב שמיני עצרת','2027-10-23':'שמיני עצרת',
+  '2028-10-04':'ערב סוכות','2028-10-05':'סוכות א','2028-10-11':'ערב שמיני עצרת','2028-10-12':'שמיני עצרת',
+};
+
+function dk(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function getRestAt(dt){
+  const day=dt.getDay(),h=dt.getHours();
+  if((day===5&&h>=16)||day===6||(day===0&&h<4))return{isRest:true,name:'שבת'};
+  let ck=null;
+  if(h<4){let y=new Date(dt);y.setDate(y.getDate()-1);ck=dk(y);}
+  else if(h>=16){ck=dk(dt);}
+  if(ck&&HOLIDAYS[ck])return{isRest:true,name:HOLIDAYS[ck]};
+  return{isRest:false,name:''};
+}
+
+// ═══════════════════════════════════════════
+//  ANALYSIS
+// ═══════════════════════════════════════════
+function analyseShift(sh,wkMap){
+  const W=hourlyWage;
+  const s0=new Date(sh.start),s1=new Date(sh.end);
+  const durMin=(s1-s0)/60000,brkMin=sh.breakMinutes||0;
+  const workMin=durMin-brkMin,totalH=workMin/60,wr=durMin>0?workMin/durMin:1;
+  let nightMin=0,restMin=0,spillMin=0,restNames=new Set(),wasRest=false;
+  let cur=new Date(s0);
+  const step=durMin>2880?5:1;
+  while(cur<s1){
+    const h=cur.getHours(),r=getRestAt(cur);
+    if(h>=22||h<6)nightMin+=step;
+    if(r.isRest){restMin+=step;restNames.add(r.name);wasRest=true;}
+    else if(wasRest)spillMin+=step;
+    cur.setMinutes(cur.getMinutes()+step);
+  }
+  const aN=nightMin*wr,aR=restMin*wr,aSp=spillMin*wr;
+  const aRH=aR/60,aSpH=aSp/60,aRegH=Math.max(0,totalH-aRH-aSpH);
+  const isNight=aN>=120,isRest=aRH>0,hasSpill=aSpH>0.05;
+  const rn=[...restNames];
+  const preH=sh.id!==undefined?(wkMap[sh.id]||0):0;
+  const fullWeek=isRest&&preH>=42;
+  const regThr=isNight?7:8;
+  let segs=[],bd={reg:0,ot125:0,ot150:0,r150:0,r175:0,r200:0};
+  function seg(label,hours,pct,bk,ex={}){
+    if(hours<=0.0005)return;
+    segs.push({label,hours,pct,pay:hours*W*pct,...ex});
+    if(bk)bd[bk]+=hours;
+  }
+  if(isRest){
+    if(fullWeek){
+      seg('מנוחה/חג שבוע מלא 175%',Math.min(aRH,2),1.75,'r175');
+      seg('מנוחה/חג שבוע מלא 200%',Math.max(0,aRH-2),2.0,'r200');
+    }else{
+      let b=Math.min(aRH,7),o1=Math.min(Math.max(0,aRH-7),2),o2=Math.max(0,aRH-9);
+      seg('מנוחה/חג 150% (עד 7ש\')',b,1.5,'r150');
+      seg('מנוחה/חג שע"נ 175%',o1,1.75,'r175');
+      seg('מנוחה/חג שע"נ 200%',o2,2.0,'r200');
+    }
+  }
+  if(hasSpill){
+    let tl=Math.max(0,regThr-aRH);
+    let bs=Math.min(aSpH,tl),o1=Math.min(Math.max(0,aSpH-tl),2),o2=Math.max(0,aSpH-tl-2);
+    seg('אחרי צאת שבת/חג — רגיל',bs,1.0,'reg',{spill:true});
+    seg('אחרי צאת — שע"נ 125%',o1,1.25,'ot125',{spill:true});
+    seg('אחרי צאת — שע"נ 150%',o2,1.5,'ot150',{spill:true});
+  }
+  if(aRegH>0.001){
+    let b=Math.min(aRegH,regThr),o1=Math.min(Math.max(0,aRegH-regThr),2),o2=Math.max(0,aRegH-regThr-2);
+    seg(isNight?`לילה — רגיל (עד ${regThr}ש')`:`רגיל (עד ${regThr}ש')`,b,1.0,'reg');
+    seg('שע"נ 125%',o1,1.25,'ot125');
+    seg('שע"נ 150%',o2,1.5,'ot150');
+  }
+  let notes=[];
+  if(isNight)notes.push(`🌙 לילה: ${Math.round(aN)} דקות → שע"נ מה-${regThr}`);
+  if(isRest)notes.push(`✡️ ${rn.join(', ')} — שע"נ מה-7`);
+  if(hasSpill)notes.push(`↪️ גלישה אחרי 04:00: ${fmtH(aSpH)} שעות`);
+  if(fullWeek)notes.push(`⚠️ שבוע מלא → 175%/200%`);
+  return{totalH,isNight,isRest,hasSpill,restNames:rn,fullWeek,
+    aN:Math.round(aN),aRH,aSpH,regThr,segs,pay:segs.reduce((a,s)=>a+s.pay,0),bd,notes};
+}
+
+// ═══════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════
+let shifts=JSON.parse(localStorage.getItem('sp_shifts')||'[]');
+let hourlyWage=parseFloat(localStorage.getItem('sp_wage')||'0');
+let deductions=JSON.parse(localStorage.getItem('sp_ded')||'{"penEmp":6,"penEmpr":6.5,"kshEmp":2.5,"kshEmpr":7.5,"taxPts":2.25}');
+let charts={},activeMonth='all';
+const MHE=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const TAX_PT=242;
+const TAX_BR=[{u:7010,r:.1},{u:10060,r:.14},{u:16150,r:.2},{u:20870,r:.31},{u:42960,r:.35},{u:55270,r:.47},{u:Infinity,r:.5}];
+const BL_BR=[{u:7522,r:.004},{u:Infinity,r:.07}];
+
+function save(){localStorage.setItem('sp_shifts',JSON.stringify(shifts));}
+function getMK(iso){let d=new Date(iso);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function fmtD(iso){let d=new Date(iso);return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;}
+function fmtT(iso){let d=new Date(iso);return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function fmtH(h){h=Math.abs(h);return`${Math.floor(h)}:${String(Math.round((h%1)*60)).padStart(2,'0')}`;}
+function fmtM(n){return`₪${Math.abs(n).toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2})}`;}
+function getWk(d){let x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10);}
+
+function buildWkMap(){
+  let wr={},pm={};
+  [...shifts].sort((a,b)=>new Date(a.start)-new Date(b.start)).forEach(sh=>{
+    let wk=getWk(new Date(sh.start));
+    pm[sh.id]=(wr[wk]||0);
+    let h=(new Date(sh.end)-new Date(sh.start))/3600000-(sh.breakMinutes||0)/60;
+    wr[wk]=(wr[wk]||0)+h;
+  });
+  return pm;
+}
+
+function calcTax(g){let t=0,p=0;for(let b of TAX_BR){if(g<=p)break;t+=(Math.min(g,b.u)-p)*b.r;p=b.u;}return Math.max(0,t-deductions.taxPts*TAX_PT);}
+function calcBL(g){let t=0,p=0;for(let b of BL_BR){if(g<=p)break;t+=(Math.min(g,b.u)-p)*b.r;p=b.u;}return t;}
+function calcBH(g){return g<=7522?g*.031:7522*.031+(g-7522)*.05;}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+const TITLES={dashboard:'דשבורד',add:'הוספת משמרת',shifts:'כל המשמרות',reports:'דוחות שכר',charts:'גרפים',holidays:'חגים קרובים',settings:'הגדרות'};
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(document.getElementById('ni-'+id))document.getElementById('ni-'+id).classList.add('active');
+  document.getElementById('hdr-title').textContent=TITLES[id]||'';
+  document.getElementById('content').scrollTop=0;
+  // header extra button — no longer used for shifts
+  let hx=document.getElementById('hdr-extra');
+  hx.style.display='none';
+  if(id==='dashboard')renderDash();
+  if(id==='shifts')renderShiftsList();
+  if(id==='reports'){updateRsel();renderReport();}
+  if(id==='charts'){updateChartsModeSelect();renderBigCharts();}
+  if(id==='holidays')renderHolidays();
+  if(id==='settings')loadSettings();
+}
+
+let _hdrExtraPage='shifts';
+function hdrExtraAction(){}
+
+// ═══════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════
+function openHelp(){document.getElementById('help-modal').classList.add('open');}
+function closeHelp(){document.getElementById('help-modal').classList.remove('open');}
+function closeHelpOutside(e){if(e.target===document.getElementById('help-modal'))closeHelp();}
+
+// ═══════════════════════════════════════════
+//  ADD SHIFT
+// ═══════════════════════════════════════════
+function previewDetect(){
+  let sd=document.getElementById('f-sd').value,st=document.getElementById('f-st').value;
+  let ed=document.getElementById('f-ed').value,et=document.getElementById('f-et').value;
+  let box=document.getElementById('dbox');
+  if(!sd||!st||!ed||!et){box.style.display='none';return;}
+  let start=new Date(`${sd}T${st}`),end=new Date(`${ed}T${et}`);
+  if(end<=start){box.style.display='none';return;}
+  let fk={id:'__p__',start:start.toISOString(),end:end.toISOString(),breakMinutes:parseInt(document.getElementById('f-brk').value)||0};
+  let c=analyseShift(fk,buildWkMap());
+  let tags=[];
+  if(c.isNight)tags.push(`<span class="badge b-blue">🌙 לילה</span>`);
+  c.restNames.forEach(n=>tags.push(`<span class="badge b-gold">✡️ ${n}</span>`));
+  if(c.hasSpill)tags.push(`<span class="badge b-teal">↪️ גלישה</span>`);
+  if(c.fullWeek)tags.push(`<span class="badge b-red">⚠️ שבוע מלא</span>`);
+  if(!c.isNight&&!c.isRest)tags.push(`<span class="badge b-green">✅ רגיל</span>`);
+  box.style.display='block';
+  document.getElementById('dtags').innerHTML=tags.join('');
+  let ex='';
+  if(c.isNight)ex+=`<div>שע"נ מהשעה ה-${c.regThr}</div>`;
+  if(hourlyWage>0)ex+=`<div style="color:var(--green);font-weight:700;margin-top:4px;">שכר משוער: ${fmtM(c.pay)}</div>`;
+  document.getElementById('dextra').innerHTML=ex;
+}
+
+function addShift(){
+  let sd=document.getElementById('f-sd').value,st=document.getElementById('f-st').value;
+  let ed=document.getElementById('f-ed').value,et=document.getElementById('f-et').value;
+  let brk=parseInt(document.getElementById('f-brk').value)||0;
+  if(!sd||!st||!ed||!et){showToast('❌ יש למלא את כל השדות','error');return;}
+  let s=new Date(`${sd}T${st}`),e=new Date(`${ed}T${et}`);
+  if(e<=s){showToast('❌ שעת הסיום חייבת להיות אחרי ההתחלה','error');return;}
+  shifts.push({id:Date.now(),start:s.toISOString(),end:e.toISOString(),breakMinutes:brk});
+  save();showToast('✅ המשמרת נוספה!','success');
+  clearForm();showPage('shifts');
+}
+
+function clearForm(){
+  let t=new Date().toISOString().slice(0,10);
+  ['f-sd','f-ed'].forEach(i=>document.getElementById(i).value=t);
+  ['f-st','f-et'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f-brk').value='0';
+  document.getElementById('dbox').style.display='none';
+}
+
+// ═══════════════════════════════════════════
+//  SHIFT ITEM
+// ═══════════════════════════════════════════
+function makeItem(sh,wm){
+  let c=analyseShift(sh,wm);
+  let tags=[];
+  if(c.isNight)tags.push(`<span class="badge b-blue">🌙</span>`);
+  c.restNames.forEach(n=>tags.push(`<span class="badge b-gold">✡️ ${n}</span>`));
+  if(c.hasSpill)tags.push(`<span class="badge b-teal">↪️</span>`);
+  if(c.fullWeek)tags.push(`<span class="badge b-red">⚠️</span>`);
+  if(!c.isNight&&!c.isRest)tags.push(`<span class="badge b-green">רגיל</span>`);
+  let bk=`<div class="bk">
+    <div class="bkr hdr"><div class="bkl">סוג שעה</div><div class="bkp">%</div><div class="bkm">שכר</div></div>`;
+  c.segs.forEach(s=>{
+    bk+=`<div class="bkr${s.spill?' spill':''}"><div class="bkl">${s.label}</div><div class="bkp">${Math.round(s.pct*100)}%</div><div class="bkm">${fmtM(s.pay)}</div></div>`;
+  });
+  bk+=`<div class="bkr ttl"><div class="bkl">סה"כ — ${fmtH(c.totalH)}</div><div class="bkp">—</div><div class="bkm">${fmtM(c.pay)}</div></div></div>`;
+  let notes=c.notes.length?`<div class="det-note">${c.notes.map(n=>`• ${n}`).join('<br>')}</div>`:'';
+  return `<div class="si" onclick="toggleItem(${sh.id})">
+    <div class="si-top">
+      <div class="si-date">${fmtD(sh.start)}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="si-pay">${fmtM(c.pay)}</div>
+        <button class="del-btn" onclick="event.stopPropagation();delShift(${sh.id})">🗑</button>
+      </div>
+    </div>
+    <div class="si-mid">
+      <span class="si-time">${fmtT(sh.start)} → ${fmtT(sh.end)}</span>
+      <span style="color:var(--brd)">·</span>
+      <span class="si-dur">${fmtH(c.totalH)}</span>
+    </div>
+    <div class="si-tags">${tags.join('')}</div>
+    <div class="si-body" id="sb-${sh.id}">${bk}${notes}</div>
+  </div>`;
+}
+
+function toggleItem(id){
+  let el=document.getElementById('sb-'+id);
+  if(el)el.classList.toggle('open');
+}
+
+function delShift(id){
+  showConfirm('למחוק משמרת זו?', ()=>{
+    shifts=shifts.filter(s=>s.id!==id);
+    save();renderShiftsList();renderDash();
+    showToast('🗑️ נמחקה','success');
+  });
+}
+
+// ═══════════════════════════════════════════
+//  SHIFTS LIST
+// ═══════════════════════════════════════════
+function renderShiftsList(){
+  let wm=buildWkMap();
+  let months=[...new Set(shifts.map(s=>getMK(s.start)))].sort().reverse();
+  let chips=`<button class="chip${activeMonth==='all'?' active':''}" onclick="setMonth('all')">הכל</button>`;
+  months.forEach(m=>{let[y,mo]=m.split('-');chips+=`<button class="chip${activeMonth===m?' active':''}" onclick="setMonth('${m}')">${MHE[parseInt(mo)-1]} ${y}</button>`;});
+  document.getElementById('chips').innerHTML=chips;
+  let data=activeMonth==='all'?shifts:shifts.filter(s=>getMK(s.start)===activeMonth);
+  data=[...data].sort((a,b)=>new Date(b.start)-new Date(a.start));
+  let el=document.getElementById('shifts-list');
+  if(!data.length){el.innerHTML=`<div class="empty"><div class="ei">📋</div><h3>אין משמרות</h3><p>לחץ ＋ להוספת משמרת</p></div>`;return;}
+  let sec=document.createElement('div');sec.className='sec';
+  sec.innerHTML=data.map(s=>makeItem(s,wm)).join('');
+  el.innerHTML='';el.appendChild(sec);
+}
+
+function setMonth(m){activeMonth=m;renderShiftsList();}
+
+// ═══════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════
+function renderDash(){
+  let wm=buildWkMap(),now=new Date();
+  let cmk=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  let ms=shifts.filter(s=>getMK(s.start)===cmk);
+  let totP=ms.reduce((a,s)=>a+analyseShift(s,wm).pay,0);
+  let totH=ms.reduce((a,s)=>a+analyseShift(s,wm).totalH,0);
+  let avg=totH>0?totP/totH:0;
+  document.getElementById('dc-pay').textContent=fmtM(totP);
+  document.getElementById('dc-hrs').textContent=fmtH(totH);
+  document.getElementById('dc-cnt').textContent=ms.length;
+  document.getElementById('dc-avg').textContent=`₪${avg.toFixed(1)}`;
+  document.getElementById('dc-mlabel').textContent=`${MHE[now.getMonth()]} ${now.getFullYear()}`;
+  let recent=[...shifts].sort((a,b)=>new Date(b.start)-new Date(a.start)).slice(0,5);
+  let rl=document.getElementById('recent-list');
+  rl.innerHTML=recent.length?recent.map(s=>makeItem(s,wm)).join(''):`<div class="empty"><div class="ei">📋</div><h3>עדיין אין משמרות</h3></div>`;
+  renderDashChart(wm);
+}
+
+function dC(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
+function cOpts(pre=''){return{responsive:true,animation:{duration:400},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${pre}${ctx.parsed.y.toFixed(0)}`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8892b0',font:{family:'Heebo',size:10}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8892b0',font:{family:'Heebo',size:10},callback:v=>`${pre}${v.toFixed(0)}`}}}};}
+
+function renderDashChart(wm){
+  dC('dc');
+  let now=new Date(),mks=[];
+  for(let i=5;i>=0;i--){let d=new Date(now.getFullYear(),now.getMonth()-i,1);mks.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  let mL=mks.map(mk=>{let[y,m]=mk.split('-');return MHE[parseInt(m)-1];});
+  let pD=mks.map(mk=>shifts.filter(s=>getMK(s.start)===mk).reduce((a,s)=>a+analyseShift(s,wm).pay,0));
+  charts['dc']=new Chart(document.getElementById('dashChart').getContext('2d'),{type:'bar',
+    data:{labels:mL,datasets:[{data:pD,backgroundColor:mks.map((_,i)=>i===5?'rgba(79,142,247,0.6)':'rgba(79,142,247,0.2)'),borderColor:'#4f8ef7',borderWidth:1.5,borderRadius:6}]},options:cOpts('₪')});
+}
+
+// ═══════════════════════════════════════════
+//  BIG CHARTS
+// ═══════════════════════════════════════════
+function updateChartsModeSelect(){
+  let sel=document.getElementById('charts-mode');
+  if(!sel)return;
+  let months=[...new Set(shifts.map(s=>getMK(s.start)))].sort().reverse();
+  let cur=sel.value;
+  sel.innerHTML='<option value="all">כל החודשים (12 חודשים אחרונים)</option>';
+  months.forEach(m=>{let[y,mo]=m.split('-');sel.innerHTML+=`<option value="${m}">${MHE[parseInt(mo)-1]} ${y}</option>`;});
+  if(cur&&cur!=='all')sel.value=cur;
+}
+
+function renderBigCharts(){
+  ['bp','bh','pie','avg','daily'].forEach(k=>dC(k));
+  let wm=buildWkMap();
+  let sel=document.getElementById('charts-mode');
+  let mode=sel?sel.value:'all';
+
+  if(mode==='all'){
+    // Show all monthly charts
+    document.getElementById('avg-chart-wrap').style.display='';
+    document.getElementById('month-breakdown').style.display='none';
+    document.getElementById('chart-pay-title').textContent='שכר לפי חודש (ברוטו)';
+    document.getElementById('chart-hrs-title').textContent='שעות לפי חודש';
+
+    let now=new Date(),mks=[];
+    for(let i=11;i>=0;i--){let d=new Date(now.getFullYear(),now.getMonth()-i,1);mks.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+    let mL=mks.map(mk=>{let[y,m]=mk.split('-');return MHE[parseInt(m)-1].slice(0,3);});
+    let pD=mks.map(mk=>shifts.filter(s=>getMK(s.start)===mk).reduce((a,s)=>a+analyseShift(s,wm).pay,0));
+    let hD=mks.map(mk=>shifts.filter(s=>getMK(s.start)===mk).reduce((a,s)=>a+analyseShift(s,wm).totalH,0));
+    let aD=mks.map((_,i)=>hD[i]>0?pD[i]/hD[i]:0);
+    charts['bp']=new Chart(document.getElementById('bigPayChart').getContext('2d'),{type:'bar',data:{labels:mL,datasets:[{data:pD,backgroundColor:'rgba(79,142,247,0.3)',borderColor:'#4f8ef7',borderWidth:1.5,borderRadius:5}]},options:cOpts('₪')});
+    charts['bh']=new Chart(document.getElementById('bigHrsChart').getContext('2d'),{type:'bar',data:{labels:mL,datasets:[{data:hD,backgroundColor:'rgba(46,204,113,0.3)',borderColor:'#2ecc71',borderWidth:1.5,borderRadius:5}]},options:cOpts('')});
+    charts['avg']=new Chart(document.getElementById('avgChart').getContext('2d'),{type:'line',data:{labels:mL,datasets:[{data:aD,borderColor:'#f0b429',backgroundColor:'rgba(240,180,41,0.08)',borderWidth:2,pointRadius:3,tension:0.4,fill:true,pointBackgroundColor:'#f0b429'}]},options:cOpts('₪')});
+  } else {
+    // Single month mode
+    let[y,mo]=mode.split('-');
+    let mName=`${MHE[parseInt(mo)-1]} ${y}`;
+    document.getElementById('avg-chart-wrap').style.display='none';
+    document.getElementById('month-breakdown').style.display='';
+    document.getElementById('chart-pay-title').textContent=`שכר לפי ימים — ${mName}`;
+    document.getElementById('chart-hrs-title').textContent=`שעות לפי ימים — ${mName}`;
+    document.getElementById('chart-month-daily-title').textContent=`פירוט משמרות — ${mName}`;
+
+    let ms=shifts.filter(s=>getMK(s.start)===mode).sort((a,b)=>new Date(a.start)-new Date(b.start));
+    let dLabels=ms.map(s=>{let d=new Date(s.start);return`${d.getDate()}/${d.getMonth()+1}`;});
+    let pD=ms.map(s=>analyseShift(s,wm).pay);
+    let hD=ms.map(s=>analyseShift(s,wm).totalH);
+
+    charts['bp']=new Chart(document.getElementById('bigPayChart').getContext('2d'),{type:'bar',data:{labels:dLabels,datasets:[{data:pD,backgroundColor:'rgba(79,142,247,0.4)',borderColor:'#4f8ef7',borderWidth:1.5,borderRadius:5}]},options:cOpts('₪')});
+    charts['bh']=new Chart(document.getElementById('bigHrsChart').getContext('2d'),{type:'bar',data:{labels:dLabels,datasets:[{data:hD,backgroundColor:'rgba(46,204,113,0.4)',borderColor:'#2ecc71',borderWidth:1.5,borderRadius:5}]},options:cOpts('')});
+
+    // Daily pay line chart
+    let cum=0,cumArr=pD.map(p=>{cum+=p;return Math.round(cum);});
+    charts['daily']=new Chart(document.getElementById('dailyPayChart').getContext('2d'),{type:'line',data:{labels:dLabels,datasets:[{label:'צבירה',data:cumArr,borderColor:'#f0b429',backgroundColor:'rgba(240,180,41,0.08)',borderWidth:2,pointRadius:3,tension:0.4,fill:true,pointBackgroundColor:'#f0b429'}]},options:{...cOpts('₪'),plugins:{legend:{display:true,labels:{color:'#8892b0',font:{family:'Heebo',size:11}}}}}});
+  }
+
+  // Pie chart always shown (all data)
+  let tR=0,t1=0,t2=0,tRst=0;
+  let src=mode==='all'?shifts:shifts.filter(s=>getMK(s.start)===mode);
+  src.forEach(s=>{let c=analyseShift(s,wm);tR+=c.bd.reg;t1+=c.bd.ot125;t2+=c.bd.ot150;tRst+=c.bd.r150+c.bd.r175+c.bd.r200;});
+  charts['pie']=new Chart(document.getElementById('pieChart').getContext('2d'),{type:'doughnut',
+    data:{labels:['רגיל 100%','125%','150%','מנוחה'],
+    datasets:[{data:[tR,t1,t2,tRst],backgroundColor:['rgba(79,142,247,0.7)','rgba(240,180,41,0.7)','rgba(247,95,79,0.7)','rgba(124,92,252,0.7)'],borderWidth:0}]},
+    options:{responsive:true,animation:{duration:400},plugins:{legend:{position:'bottom',labels:{color:'#8892b0',font:{family:'Heebo',size:11},padding:12}}}}});
+}
+
+// ═══════════════════════════════════════════
+//  REPORTS
+// ═══════════════════════════════════════════
+function updateRsel(){
+  let months=[...new Set(shifts.map(s=>getMK(s.start)))].sort().reverse();
+  let sel=document.getElementById('rsel'),cur=sel.value;
+  sel.innerHTML='<option value="">בחר חודש</option>';
+  months.forEach(m=>{let[y,mo]=m.split('-');sel.innerHTML+=`<option value="${m}">${MHE[parseInt(mo)-1]} ${y}</option>`;});
+  if(!cur&&months.length)sel.value=months[0];else if(cur)sel.value=cur;
+}
+
+function renderReport(){
+  let mk=document.getElementById('rsel').value;
+  if(!mk){document.getElementById('report-content').innerHTML=`<div class="empty"><div class="ei">📄</div><h3>בחר חודש לדוח</h3></div>`;return;}
+  let wm=buildWkMap(),ms=shifts.filter(s=>getMK(s.start)===mk);
+  let[y,mo]=mk.split('-'),mName=`${MHE[parseInt(mo)-1]} ${y}`;
+  if(!ms.length){document.getElementById('report-content').innerHTML=`<div class="empty"><div class="ei">📋</div><h3>אין משמרות ב${mName}</h3></div>`;return;}
+  let agg={},totH=0,gross=0;
+  ms.forEach(s=>{let c=analyseShift(s,wm);totH+=c.totalH;gross+=c.pay;
+    c.segs.forEach(sg=>{let k=Math.round(sg.pct*100)+'';if(!agg[k])agg[k]={pct:sg.pct,h:0,pay:0};agg[k].h+=sg.hours;agg[k].pay+=sg.pay;});});
+  const pA=gross*(deductions.penEmp/100),kA=gross*(deductions.kshEmp/100);
+  const tA=calcTax(gross),blA=calcBL(gross),bhA=calcBH(gross);
+  const totD=pA+kA+tA+blA+bhA,net=gross-totD;
+  const pEA=gross*(deductions.penEmpr/100),kEA=gross*(deductions.kshEmpr/100);
+  const allM=[...new Set(shifts.map(s=>getMK(s.start)))].filter(m=>m<=mk);
+  let tPE=0,tPEr=0,tKE=0,tKEr=0;
+  allM.forEach(m=>{let g=shifts.filter(s=>getMK(s.start)===m).reduce((a,s)=>a+analyseShift(s,wm).pay,0);
+    tPE+=g*(deductions.penEmp/100);tPEr+=g*(deductions.penEmpr/100);
+    tKE+=g*(deductions.kshEmp/100);tKEr+=g*(deductions.kshEmpr/100);});
+  let hRows=[100,125,150,175,200].map(p=>{
+    let a=agg[p+''];if(!a)return'';
+    let col=p===100?'var(--text)':p===125?'var(--gold)':p===150?'var(--accent3)':'var(--accent2)';
+    return`<div class="rr"><div class="rrl">${p}% <small>${fmtH(a.h)} שעות</small></div><div class="rrv" style="color:${col}">${fmtM(a.pay)}</div></div>`;
+  }).join('');
+  document.getElementById('report-content').innerHTML=`
+    <div class="card-2" style="margin-bottom:10px;">
+      <div class="card accent"><div class="cl">ברוטו</div><div class="cv" style="font-size:18px">${fmtM(gross)}</div><div class="cs">${fmtH(totH)} שעות</div></div>
+      <div class="card red"><div class="cl">ניכויים</div><div class="cv" style="font-size:18px">${fmtM(totD)}</div></div>
+    </div>
+    <div class="net-box"><div class="nbl">💳 נטו לתשלום — ${mName}</div><div class="nbv">${fmtM(net)}</div></div>
+    <div class="rblk"><h3>📊 פירוט שכר</h3>${hRows}
+      <div class="rr tot"><div class="rrl">סה"כ ברוטו</div><div class="rrv" style="color:var(--accent)">${fmtM(gross)}</div></div>
+    </div>
+    <div class="rblk"><h3>➖ ניכויים</h3>
+      <div class="rr"><div class="rrl">פנסיה עובד (${deductions.penEmp}%)</div><div class="rrv" style="color:var(--accent3)">- ${fmtM(pA)}</div></div>
+      <div class="rr"><div class="rrl">קרן השתלמות עובד (${deductions.kshEmp}%)</div><div class="rrv" style="color:var(--accent3)">- ${fmtM(kA)}</div></div>
+      <div class="rr"><div class="rrl">מס הכנסה <small>${deductions.taxPts} נק' זיכוי</small></div><div class="rrv" style="color:var(--accent3)">- ${fmtM(tA)}</div></div>
+      <div class="rr"><div class="rrl">ביטוח לאומי</div><div class="rrv" style="color:var(--accent3)">- ${fmtM(blA)}</div></div>
+      <div class="rr"><div class="rrl">ביטוח בריאות</div><div class="rrv" style="color:var(--accent3)">- ${fmtM(bhA)}</div></div>
+      <div class="rr tot"><div class="rrl">סה"כ ניכויים</div><div class="rrv" style="color:var(--accent3)">- ${fmtM(totD)}</div></div>
+    </div>
+    <div class="rblk"><h3>➕ הפרשות מעביד</h3>
+      <div class="rr"><div class="rrl">פנסיה (${deductions.penEmpr}%)</div><div class="rrv" style="color:var(--green)">${fmtM(pEA)}</div></div>
+      <div class="rr"><div class="rrl">השתלמות (${deductions.kshEmpr}%)</div><div class="rrv" style="color:var(--green)">${fmtM(kEA)}</div></div>
+    </div>
+    <div class="rblk"><h3>🏛️ צבירה מצטברת</h3>
+      <div class="rr"><div class="rrl">קרן פנסיה</div><div class="rrv" style="color:var(--gold)">${fmtM(tPE+tPEr)}</div></div>
+      <div class="rr"><div class="rrl">קרן השתלמות</div><div class="rrv" style="color:var(--gold)">${fmtM(tKE+tKEr)}</div></div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+//  HOLIDAYS
+// ═══════════════════════════════════════════
+function renderHolidays(){
+  const now=new Date(),today=dk(now);
+  const entries=Object.entries(HOLIDAYS).sort((a,b)=>a[0]<b[0]?-1:1);
+  const up=entries.filter(([d])=>d>=today).slice(0,12);
+  const past=entries.filter(([d])=>d<today).slice(-8).reverse();
+  function item([d,n],isPast){
+    const dt=new Date(d+'T16:00:00');
+    const diff=Math.ceil((dt-now)/86400000);
+    const ds=isPast?'עבר':diff===0?'היום!':diff===1?'מחר':`בעוד ${diff} ימים`;
+    return`<div class="hitem${isPast?' hpast':''}">
+      <div><div class="hitem-n">${n}</div><div class="hitem-d">${d}</div></div>
+      <span class="hitem-b">${ds}</span></div>`;
+  }
+  document.getElementById('hol-up').innerHTML=up.map(e=>item(e,false)).join('');
+  document.getElementById('hol-past').innerHTML=past.map(e=>item(e,true)).join('');
+}
+
+// ═══════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════
+function loadSettings(){
+  document.getElementById('wage-val').textContent=hourlyWage.toFixed(2);
+  document.getElementById('wage-input').value='';
+  document.getElementById('s-pen-emp').value=deductions.penEmp;
+  document.getElementById('s-pen-empr').value=deductions.penEmpr;
+  document.getElementById('s-ksh-emp').value=deductions.kshEmp;
+  document.getElementById('s-ksh-empr').value=deductions.kshEmpr;
+  document.getElementById('s-tax-pts').value=deductions.taxPts;
+}
+function saveWage(){
+  let v=parseFloat(document.getElementById('wage-input').value);
+  if(isNaN(v)||v<0){showToast('❌ שכר לא תקין','error');return;}
+  hourlyWage=v;localStorage.setItem('sp_wage',v);
+  document.getElementById('wage-val').textContent=v.toFixed(2);
+  document.getElementById('wage-input').value='';
+  showToast('✅ השכר נשמר!','success');
+}
+function saveDeductions(){
+  deductions={
+    penEmp:parseFloat(document.getElementById('s-pen-emp').value)||6,
+    penEmpr:parseFloat(document.getElementById('s-pen-empr').value)||6.5,
+    kshEmp:parseFloat(document.getElementById('s-ksh-emp').value)||2.5,
+    kshEmpr:parseFloat(document.getElementById('s-ksh-empr').value)||7.5,
+    taxPts:parseFloat(document.getElementById('s-tax-pts').value)||2.25,
+  };
+  localStorage.setItem('sp_ded',JSON.stringify(deductions));
+  showToast('✅ ההגדרות נשמרו!','success');
+}
+function clearAllData(){
+  showConfirm('למחוק את כל המשמרות לצמיתות?', ()=>{
+    shifts=[];save();renderDash();renderShiftsList();
+    showToast('🗑️ כל הנתונים נמחקו','success');
+  });
+}
+
+// ═══════════════════════════════════════════
+//  EXCEL
+// ═══════════════════════════════════════════
+function exportExcel(){
+  let wm=buildWkMap();
+  let data=[...shifts].sort((a,b)=>new Date(a.start)-new Date(b.start));
+  let rows=[['תאריך','התחלה','סיום','הפסקה','שעות','לילה','מנוחה','חג','גלישה','שבוע מלא','פירוט','שכר ₪']];
+  data.forEach(s=>{
+    let c=analyseShift(s,wm);
+    let det=c.segs.map(r=>`${r.label} ${fmtH(r.hours)} × ${Math.round(r.pct*100)}% = ${fmtM(r.pay)}`).join(' | ');
+    rows.push([fmtD(s.start),fmtT(s.start),fmtT(s.end),s.breakMinutes||0,c.totalH.toFixed(2),
+      c.isNight?'כן':'לא',c.isRest?'כן':'לא',c.restNames.join(', '),c.hasSpill?'כן':'לא',c.fullWeek?'כן':'לא',det,parseFloat(c.pay.toFixed(2))]);
+  });
+  let totP=data.reduce((a,s)=>a+analyseShift(s,wm).pay,0);
+  let totH=data.reduce((a,s)=>a+analyseShift(s,wm).totalH,0);
+  rows.push([]);rows.push(['סיכום','','','','',totH.toFixed(2),'','','','','',totP.toFixed(2)]);
+  let ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[12,8,8,8,8,6,8,16,6,8,70,13].map(w=>({wch:w}));
+  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'משמרות');
+  XLSX.writeFile(wb,'shiftpro.xlsx');
+  showToast('📥 יוצא בהצלחה!','success');
+}
+
+// ═══════════════════════════════════════════
+//  TOAST & CONFIRM
+// ═══════════════════════════════════════════
+let toastTmr;
+function showToast(msg,type='success'){
+  let t=document.getElementById('toast');
+  clearTimeout(toastTmr);
+  t.textContent=msg;
+  t.className=`toast ${type}`;
+  // Force reflow to restart transition
+  void t.offsetWidth;
+  t.classList.add('show');
+  toastTmr=setTimeout(()=>{
+    t.classList.remove('show');
+  },3000);
+}
+
+let _confirmCb=null;
+function showConfirm(msg,onYes){
+  _confirmCb=onYes;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function confirmYes(){
+  document.getElementById('confirm-modal').classList.remove('open');
+  if(_confirmCb){_confirmCb();_confirmCb=null;}
+}
+function confirmNo(){
+  document.getElementById('confirm-modal').classList.remove('open');
+  _confirmCb=null;
+}
+
+// ═══════════════════════════════════════════
+//  SERVICE WORKER
+// ═══════════════════════════════════════════
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+(function(){
+  let t=new Date().toISOString().slice(0,10);
+  document.getElementById('f-sd').value=t;
+  document.getElementById('f-ed').value=t;
+  loadSettings();updateRsel();renderDash();
+})();
+</script>
+</body>
+</html>
